@@ -17,7 +17,7 @@
         repo: 'https://github.com/krixapolinario/getting-started-app.git'
         dest: /srv/checkout
 
-    - name: Build image 
+    - name: Build image
       community.docker.docker_image:
         name: todoapp
         tag: v1
@@ -25,7 +25,7 @@
           path: './getting-started-app/'
           pull: false
         source: local
-    
+
     - name: Deploy app
       community.docker.docker_stack:
         state: present

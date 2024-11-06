@@ -1,0 +1,67 @@
+name: Deploy App 
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:  
+  ansible-lint:
+    name: Ansible Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+      - name: Run ansible-lint
+        uses: ansible/ansible-lint@main
+        with:
+          working_directory: ./ansible
+  
+  sonarcloud:
+    name: SonarCloud
+    runs-on: ubuntu-latest
+    needs:
+      - ansible-lint
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  ansible:
+    name: Ansible
+    runs-on: ubuntu-latest
+    environment: production
+    needs: 
+      - ansible-lint
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./ansible
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup SSH 
+        shell: bash
+        run: |
+          pwd
+          ls -la
+          eval `ssh-agent -s`
+          mkdir -p /home/runner/.ssh/
+          touch /home/runner/.ssh/ecdsa_ansible
+          echo -e "${{ secrets.ANSIBLE_SSH }}" > /home/runner/.ssh/ecdsa_ansible
+          chmod 700 /home/runner/.ssh/ecdsa_ansible
+      - name: Create Ansible Inventory
+        run: |
+          echo "lab-sast ansible_port=22 ansible_host=${INSTANCE_NAT_IP} ansible_user=ansible ansible_ssh_private_key_file=/home/runner/.ssh/ecdsa_ansible" >> ./inventory.yml
+          cat ./inventory.yml
+        env:
+          INSTANCE_NAT_IP: ${{ needs.terraform.outputs.instance_nat_ip }}
+      - name: Run Ansible Playbook 
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: False
+        run: |
+          ansible-playbook -i ./inventory.yml main.yml

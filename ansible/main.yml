@@ -27,7 +27,7 @@
         source: local
     
     - name: Deploy app
-      docker_stack:
+      community.docker.docker_stack:
         state: present
         name: todoapp
         compose:

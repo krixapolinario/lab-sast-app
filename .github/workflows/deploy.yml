@@ -37,6 +37,7 @@ jobs:
     environment: production
     needs: 
       - ansible-lint
+      - sonarcloud
     defaults:
       run:
         shell: bash

@@ -11,11 +11,17 @@
 
     - name: Gather facts
       ansible.builtin.setup:
+    
+    - name: Install collection community.network
+      community.general.ansible_galaxy_install:
+        type: collection
+        name: community.docker
 
     - name: Checkout repository
       ansible.builtin.git:
         repo: 'https://github.com/krixapolinario/getting-started-app.git'
-        dest: /srv/checkout
+        dest: '.'
+        version: master
 
     - name: Build image
       community.docker.docker_image:
